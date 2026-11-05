@@ -214,6 +214,26 @@ def render(res, fragment=False):
         '<div class="tile"><div class="k">%s</div><div class="v %s">%s</div><div class="s">%s</div></div>' % (
             e(k), cls(em["pnl"]) if k == "Empire P&L" else "", e(v), e(s)) for k, v, s in tiles))
 
+    c = res.get("court")
+    if c:
+        crow = "".join(
+            '<tr><td>%s</td><td><div class="skill">%s</div><div class="muted num" style="font-size:12px">/%s</div></td>'
+            '<td class="rule" style="max-width:640px">%s</td></tr>' % (
+                '<span class="chip crown">working</span>' if st["ok"] else '<span class="chip bad">broken</span>',
+                e(st["job"]), e(st["skill"]), e(st["finding"])) for st in c["steps"])
+        fc = c.get("full_court")
+        note = ""
+        if fc:
+            note = ('<p class="muted" style="margin:0">The Full Court ran the same chain on %d past TSLA sessions: '
+                    '%d breakouts, %d skipped because the time machine leaned toward the stop, %d blocked by risk, '
+                    '%d paper trades. Its results are in the throne room below as the Full Court skill.</p>' % (
+                        fc["days"], fc["triggered"], fc["skipped_by_timemachine"], fc["blocked"], fc["traded"]))
+        parts.append('<section class="section"><h2>The court: all 11 tools</h2><p class="muted" style="margin:0">'
+                     'The reel&#39;s trade, TSLA on %s, through every tool in the pack, each run as its own program '
+                     'on recorded real data. %d of 11 working. The broker only shows the ticket; nothing is sent.</p>'
+                     '<div class="scroll"><table><thead><tr><th>status</th><th>tool</th><th>what it found</th></tr>'
+                     '</thead><tbody>%s</tbody></table></div>%s</section>' % (e(c["date"]), c["working"], crow, note))
+
     rows = []
     for s in skills:
         st = s["stats"]

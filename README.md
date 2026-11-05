@@ -161,13 +161,21 @@ Emperor down to Exiled. No real money, no orders.
 
 ```bash
 python3 trader-timemachine/empire.py run --demo --write     # the real bars recorded in tests/fixtures
+python3 trader-timemachine/empire.py run --demo --court --write   # plus all 11 tools at work
 python3 trader-timemachine/empire.py run --symbols TSLA,NVDA --write
 ```
 
+`--court` runs the reel's trade through all 11 tools, each as its own
+program, and adds the Full Court skill: the whole chain (entry, exit, time
+machine, budget, risk, broker, alerts) on every past TSLA session, traded on
+paper only when risk passes and the time machine does not lean toward the stop.
+
 On the recorded data (TSLA, 59 sessions of 5-minute bars, July 27 to October
-16 2026, plus 3 months of daily closes for 19 stocks) the empire lost $726.30
-of its $45,000 over 269 trades, 109 wins and 160 losses (40.5 %). Two skills
-ended slightly up, seven lost money, and simply holding TSLA beat all of them.
+16 2026, plus 3 months of daily closes for 19 stocks) all 11 tools worked, and
+the empire lost $771.30 of its $50,000 over 287 trades, 117 wins and 170
+losses (40.8 %). The Full Court took 18 paper trades: 8 wins, 10 losses,
+-$45.00. Two skills ended slightly up, eight lost money, and simply holding
+TSLA beat all of them.
 Past or simulated results do not guarantee future wins.
 
 ## Fine print

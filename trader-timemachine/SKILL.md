@@ -147,9 +147,21 @@ strategies", "demo test", "which strategy wins", "win rate of every skill",
 
 ```bash
 python3 "${CLAUDE_SKILL_DIR}/empire.py" run --demo --write          # real bars recorded with the pack, offline
+python3 "${CLAUDE_SKILL_DIR}/empire.py" run --demo --court --write  # plus all 11 tools at work, about 2 minutes
 python3 "${CLAUDE_SKILL_DIR}/empire.py" run --symbols TSLA,NVDA,AAPL --write   # live Yahoo data
 python3 "${CLAUDE_SKILL_DIR}/empire.py" run --offline TSLA-60d5m.json.gz --daily spark.json --json
 ```
+
+`--court` puts all 11 tools of the pack to work (`court.py`). First the
+reel's trade, TSLA on 2026-10-19, goes through every tool in order, each run
+as its own program on the recorded data: scanner, news, entry, exit, time
+machine, budget, risk, broker (it shows the ticket, never sends it), alerts,
+analyst and pelosi. The run lists each tool as working or broken. Then the
+Full Court skill runs the same chain on every past TSLA session with 20
+sessions before it, and trades on paper only when trader-risk passes,
+trader-broker shows the ticket READY and the time machine does not lean
+toward the stop. It takes about 2 minutes. The paper fill is the empire's
+own: it never calls `ticket.py approve`, which needs a person's yes.
 
 `--write` saves `trader/empire.json` and `trader/empire.html`, a dashboard
 that opens in any browser: the treasury, wins and losses, the win rate with

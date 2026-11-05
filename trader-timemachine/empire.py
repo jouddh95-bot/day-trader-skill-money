@@ -9,6 +9,7 @@ way it did. No order is ever placed. No real money is ever used.
 
     python3 empire.py run --demo                     # the recorded real data shipped with the pack
     python3 empire.py run --demo --write             # also save trader/empire.json and trader/empire.html
+    python3 empire.py run --demo --court --write     # also run all 11 tools of the pack (about 2 minutes)
     python3 empire.py run --symbols TSLA,AAPL,NVDA   # live: 60 days of 5-min bars + 1 year of daily closes
     python3 empire.py run --offline TSLA-60d5m.json.gz --daily spark.json
     python3 empire.py run --demo --json
@@ -23,6 +24,12 @@ Two provinces:
   slippage on the way in and on the way out.
   Swing trading (daily closes, one position per stock at a time, at most 5
   open, $1,000 a position). Entries and exits at the close.
+
+--court runs the pack's own 11 tools as the empire's court (court.py): the reel's
+day through scanner, news, entry, exit, time machine, budget, risk, broker,
+alerts, analyst and pelosi, and the Full Court skill, the same chain on every
+past TSLA session, traded on paper only when risk passes, broker shows it
+READY and the time machine does not lean toward the stop.
 
 Every skill gets its own $5,000 paper account. The empire's treasury is the
 sum of all of them. The numbers are exactly what the rules did on that data,
@@ -444,8 +451,10 @@ def fetch_daily(sym):
 
 # ---------------------------------------------------------------- the run
 
-def run(intraday, daily, source):
-    """intraday: [(sym, text)], daily: {sym: [(date, close)]}."""
+def run(intraday, daily, source, court=False):
+    """intraday: [(sym, (sessions, prev closes))], daily: {sym: [(date, close)]}.
+    court=True also runs all 11 tools of the pack (court.py): the reel's day, and the full chain on every
+    TSLA session as its own skill, the Full Court."""
     skills, periods = [], []
     benchmarks = []
     for key, name, rule, fn in DAY_SKILLS:
@@ -464,6 +473,24 @@ def run(intraday, daily, source):
             sh = int(MAX_ORDER / o)
             benchmarks.append({"name": "Buy and hold %s" % sym, "detail": "%d shares at the first open %.2f, "
                                "held to %.2f" % (sh, o, c), "pnl": round(sh * (c - o), 2)})
+    court_res = None
+    if court:
+        import court as _court
+        court_res = _court.reel_day()
+        tsla = [x for sym, x in intraday if sym == "TSLA"]
+        if tsla:
+            trades, log = _court.full_court(tsla[0][0], walk, SLIP)
+            court_res["full_court"] = {
+                "days": len(log), "triggered": sum(1 for r in log if "timemachine" in r or "risk" in r),
+                "traded": len(trades),
+                "skipped_by_timemachine": sum(1 for r in log if "leans toward the stop" in r["result"]),
+                "blocked": sum(1 for r in log if r["result"].startswith("skipped: risk")),
+                "log": log}
+            skills.append({"key": "full_court", "name": "Full Court", "province": "Day trading (5-minute bars)",
+                           "rule": "all the pack's tools on every session: entry watches for the breakout, exit "
+                           "sets the range-midpoint stop and 1R target, the time machine must not lean toward the "
+                           "stop, budget sizes it, risk must PASS, broker must show it READY, alerts watch the "
+                           "stop, target and 3:55", "trades": trades, "stats": stats(trades)})
     if daily:
         for key, name, rule, fn in SWING_SKILLS:
             trades = run_swing_skill(fn, daily)
@@ -492,7 +519,7 @@ def run(intraday, daily, source):
         "profitable_skills": sum(1 for s in skills if s["stats"]["pnl"] > 0),
         "losing_skills": sum(1 for s in skills if s["stats"]["pnl"] <= 0),
     }
-    return {"source": source, "periods": periods, "disclaimer": DISCLAIMER, "seed": SEED,
+    return {"court": court_res, "source": source, "periods": periods, "disclaimer": DISCLAIMER, "seed": SEED,
             "rules": {"account": ACCOUNT, "max_loss_per_trade": MAX_LOSS, "max_order": MAX_ORDER,
                       "slippage_per_share_each_side": SLIP, "no_entries_before": "09:45",
                       "no_entries_after": "15:30", "flat_by": "15:55", "long_only": True,
@@ -513,6 +540,16 @@ def report(res):
     out = ["TRADE EMPIRE  (paper money only)", res["disclaimer"], "",
            "Data: %s." % res["source"]]
     out += ["  " + p for p in res["periods"]]
+    c = res.get("court")
+    if c:
+        out += ["", "THE COURT: the pack's 11 tools on the reel's day, %s (%d of 11 working):" % (c["date"], c["working"])]
+        for st in c["steps"]:
+            out.append("  %-4s %-16s %s" % ("OK" if st["ok"] else "FAIL", st["job"], st["finding"]))
+        fc = c.get("full_court")
+        if fc:
+            out.append("  Full Court on %d past TSLA sessions: %d breakouts, %d skipped because the time machine "
+                       "leaned toward the stop, %d blocked by risk, %d paper trades." % (
+                           fc["days"], fc["triggered"], fc["skipped_by_timemachine"], fc["blocked"], fc["traded"]))
     out += ["", "Treasury: $%s from $%s across %d paper accounts (%s). %d trades: %d wins, %d losses, "
             "win rate %s (95 %% range %s to %s)." % (
                 "{:,.2f}".format(e["treasury"]), "{:,.0f}".format(e["start"]), e["accounts"], money(e["pnl"]),
@@ -556,6 +593,8 @@ def main(argv=None):
     r.add_argument("--write", action="store_true", help="save trader/empire.json and trader/empire.html")
     r.add_argument("--out", default="trader", help="folder for --write (default trader)")
     r.add_argument("--json", action="store_true")
+    r.add_argument("--court", action="store_true",
+                   help="also run all 11 tools: the reel's day, and the Full Court on every TSLA session (slow)")
     a = ap.parse_args(argv)
     if a.cmd != "run":
         ap.print_help()
@@ -585,7 +624,7 @@ def main(argv=None):
                 tm._sleep(tm.PAUSE)
         if not intraday and not daily:
             raise EmpireError("no data: pass --demo, --symbols TSLA,AAPL or --offline FILE")
-        res = run(intraday, daily, "; ".join(src) or "saved files")
+        res = run(intraday, daily, "; ".join(src) or "saved files", court=a.court)
     except (EmpireError, tm.TMError, ValueError) as e:
         print("empire: %s" % e, file=sys.stderr)
         return 1
