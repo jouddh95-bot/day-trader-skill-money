@@ -137,6 +137,45 @@ side. It did in 53.6 %. The replays came out close to a coin flip, and the
 real history was slightly worse than even. That is the honest answer for this setup, and it is what
 the user should hear before `/trader-budget` sizes 8 shares.
 
+## Trade Empire: every skill, paper money, real past data
+
+`empire.py` runs a whole set of strategies ("skills") on past bars, each with
+its own $5,000 paper account, and ranks them like an empire. Use it when the
+user says "trade empire", "build me an empire", "paper trade all the
+strategies", "demo test", "which strategy wins", "win rate of every skill",
+"backtest everything". It never places an order and never uses real money.
+
+```bash
+python3 "${CLAUDE_SKILL_DIR}/empire.py" run --demo --write          # real bars recorded with the pack, offline
+python3 "${CLAUDE_SKILL_DIR}/empire.py" run --symbols TSLA,NVDA,AAPL --write   # live Yahoo data
+python3 "${CLAUDE_SKILL_DIR}/empire.py" run --offline TSLA-60d5m.json.gz --daily spark.json --json
+```
+
+`--write` saves `trader/empire.json` and `trader/empire.html`, a dashboard
+that opens in any browser: the treasury, wins and losses, the win rate with
+its 95 % range, P&L, profit factor, max drawdown, an equity curve per skill,
+the throne-room ranking and every trade in the books.
+
+The skills. Day trading, on 5-minute bars, long only, one trade a day each:
+opening-range breakout 1R (the reel's rule) and 2R, VWAP reclaim, dip bounce,
+9/21 EMA trend, gap and go, power hour. Swing trading, on daily closes:
+three red days, 20-day breakout. Same limits as the pack: at most $50 at
+risk and $4,000 per day trade, no entries before 9:45 or after 3:30, flat by
+3:55, 1 cent a share of slippage each way. A bar that touches the stop and
+the target counts as the stop; a gap under the stop fills at the open.
+
+Titles: the best earner with 10 or more trades is Emperor, then King, Duke,
+Count, Baron, Knight. A skill that lost money is a Peasant, the worst one is
+Exiled, and a skill with under 10 trades is a Squire: too few to judge.
+"Odds green, next 20" redraws 20 of the skill's own past trades 10,000 times
+(seed 19). It measures the past, not the future.
+
+Tell the user, in this order: the treasury and the empire's P&L, the wins,
+losses and win rate with its range, the ranking with every skill's P&L
+(losers included), the buy-and-hold comparison, then the disclaimer as
+printed. Never call a skill a sure thing. Say plainly when most skills lost.
+Past or simulated results do not guarantee future wins.
+
 ## Rules
 
 - Every number comes from the run. Never round a coin flip up into an edge.
@@ -152,7 +191,8 @@ the user should hear before `/trader-budget` sizes 8 shares.
 ## What it never does
 
 It never places an order, never sizes a position, never changes the plan,
-and never calls a result a sure thing. It never prints a P&L or a profit.
+and never calls a result a sure thing. `timemachine.py` never prints a P&L
+or a profit; `empire.py` prints paper P&L on past data only, losses included.
 It never uses a bar that has not closed yet, and never mixes today's bars
 into the pool.
 

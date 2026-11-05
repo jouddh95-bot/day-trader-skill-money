@@ -152,6 +152,24 @@ for the 60 days to October 19 2026, the 10:15 AM opening-range scan, Yahoo's
 TSLA headlines that morning, the House Clerk's 2026 index, real PTR text and
 real XBRL facts. They reproduce every number in the example above.
 
+## Trade Empire: a paper demo of every skill
+
+`trader-timemachine/empire.py` runs nine strategies on real past bars, each
+with its own $5,000 paper account, and writes an empire-style dashboard:
+wins, losses, win rate with its 95 % range, P&L, drawdown, and a ranking from
+Emperor down to Exiled. No real money, no orders.
+
+```bash
+python3 trader-timemachine/empire.py run --demo --write     # the real bars recorded in tests/fixtures
+python3 trader-timemachine/empire.py run --symbols TSLA,NVDA --write
+```
+
+On the recorded data (TSLA, 59 sessions of 5-minute bars, July 27 to October
+16 2026, plus 3 months of daily closes for 19 stocks) the empire lost $726.30
+of its $45,000 over 269 trades, 109 wins and 160 losses (40.5 %). Two skills
+ended slightly up, seven lost money, and simply holding TSLA beat all of them.
+Past or simulated results do not guarantee future wins.
+
 ## Fine print
 
 **Not financial advice.** This is software that reads public data and does
